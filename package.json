@@ -1,6 +1,6 @@
 {
   "name": "rye",
-  "version": "1.0.0",
+  "version": "0.0.1",
   "description": "Eye rest reminder app",
   "main": "main.js",
   "scripts": {
@@ -29,6 +29,14 @@
   "build": {
     "appId": "com.rye.eyerest",
     "productName": "Rye",
+    "files": [
+      "main.js",
+      "preload.js",
+      "preload-settings.js",
+      "dist/**/*",
+      "package.json",
+      "node_modules/**/*"
+    ],
     "extraResources": [
       {
         "from": "build",
