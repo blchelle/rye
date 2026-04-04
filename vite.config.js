@@ -6,6 +6,12 @@ export default defineConfig({
   base: './',
   build: {
     outDir: 'dist',
-    assetsDir: '.'
+    assetsDir: '.',
+    rollupOptions: {
+      input: {
+        main: 'index.html',
+        settings: 'settings.html'
+      }
+    }
   }
 });

@@ -1,21 +1,84 @@
-const { app, BrowserWindow } = require('electron');
+const { app, BrowserWindow, Tray, Menu, ipcMain, nativeImage } = require('electron');
 const path = require('path');
+const Store = require('electron-store');
+
+const store = new Store({
+  defaults: {
+    reminderInterval: 30,
+    breakDuration: 30,
+    isPaused: false,
+    workingHours: {
+      enabled: false,
+      startTime: '09:00',
+      endTime: '17:00'
+    }
+  }
+});
 
 let reminderWindow = null;
+let settingsWindow = null;
+let tray = null;
+let nextReminderTimeout = null;
+
+function isWithinWorkingHours() {
+  const settings = store.get('workingHours');
+  if (!settings.enabled) return true;
+
+  const now = new Date();
+  const currentMinutes = now.getHours() * 60 + now.getMinutes();
+
+  const [startHour, startMin] = settings.startTime.split(':').map(Number);
+  const [endHour, endMin] = settings.endTime.split(':').map(Number);
+
+  const startMinutes = startHour * 60 + startMin;
+  const endMinutes = endHour * 60 + endMin;
+
+  return currentMinutes >= startMinutes && currentMinutes < endMinutes;
+}
 
 function getNextReminderTime() {
+  const interval = store.get('reminderInterval');
+  const workingHours = store.get('workingHours');
+
+  if (!isWithinWorkingHours() && workingHours.enabled) {
+    const now = new Date();
+    const [startHour, startMin] = workingHours.startTime.split(':').map(Number);
+
+    const nextStart = new Date();
+    nextStart.setHours(startHour, startMin, 0, 0);
+
+    if (nextStart <= now) {
+      nextStart.setDate(nextStart.getDate() + 1);
+    }
+
+    return nextStart - now;
+  }
+
   const now = new Date();
-  const minutes = now.getMinutes();
-  const seconds = now.getSeconds();
-  const milliseconds = now.getMilliseconds();
+  const currentMinutes = now.getMinutes();
+  const currentSeconds = now.getSeconds();
+  const currentMs = now.getMilliseconds();
 
-  // Calculate minutes until next 30-min mark
-  const minutesUntilNext = minutes < 30 ? 30 - minutes : 60 - minutes;
+  let nextMinute;
+  if (interval === 60) {
+    nextMinute = 60;
+  } else {
+    for (let i = 0; i < 60; i += interval) {
+      if (i > currentMinutes) {
+        nextMinute = i;
+        break;
+      }
+    }
+    if (!nextMinute) {
+      nextMinute = 60;
+    }
+  }
 
-  // Convert to milliseconds, subtract elapsed seconds/ms in current minute
-  const msUntilNext = (minutesUntilNext * 60 * 1000) - (seconds * 1000) - milliseconds;
+  const minutesUntilNext = nextMinute === 60
+    ? 60 - currentMinutes
+    : nextMinute - currentMinutes;
 
-  return msUntilNext;
+  return (minutesUntilNext * 60 - currentSeconds) * 1000 - currentMs;
 }
 
 function createReminderWindow() {
@@ -43,31 +106,176 @@ function createReminderWindow() {
 
   reminderWindow.loadFile('dist/index.html');
 
+  const breakDuration = store.get('breakDuration');
+
   reminderWindow.webContents.on('did-finish-load', () => {
-    reminderWindow.webContents.send('start-countdown');
+    reminderWindow.webContents.send('start-countdown', { duration: breakDuration });
   });
 
-  // Auto-close after 30 seconds
   setTimeout(() => {
     if (reminderWindow) {
       reminderWindow.destroy();
       reminderWindow = null;
     }
-  }, 30000);
+  }, breakDuration * 1000);
 }
 
 function scheduleNextReminder() {
-  const msUntilNext = getNextReminderTime();
+  if (nextReminderTimeout) {
+    clearTimeout(nextReminderTimeout);
+    nextReminderTimeout = null;
+  }
 
+  if (store.get('isPaused')) {
+    console.log('Reminders paused');
+    updateTrayMenu();
+    return;
+  }
+
+  const msUntilNext = getNextReminderTime();
   console.log(`Next reminder in ${Math.floor(msUntilNext / 1000)} seconds`);
 
-  setTimeout(() => {
-    createReminderWindow();
+  nextReminderTimeout = setTimeout(() => {
+    if (!store.get('isPaused')) {
+      createReminderWindow();
+    }
     scheduleNextReminder();
   }, msUntilNext);
+
+  updateTrayMenu();
 }
 
+function rescheduleReminders() {
+  scheduleNextReminder();
+}
+
+function getNextReminderText() {
+  if (store.get('isPaused')) {
+    return 'Next reminder: Paused';
+  }
+
+  if (!nextReminderTimeout) {
+    return 'Next reminder: Calculating...';
+  }
+
+  const msUntilNext = getNextReminderTime();
+  const minutes = Math.ceil(msUntilNext / 60000);
+
+  return `Next reminder: ${minutes}m`;
+}
+
+function updateTrayMenu() {
+  if (!tray) return;
+
+  const isPaused = store.get('isPaused');
+
+  const contextMenu = Menu.buildFromTemplate([
+    {
+      label: 'Settings...',
+      click: createSettingsWindow
+    },
+    {
+      label: 'Test Alert',
+      click: createReminderWindow
+    },
+    { type: 'separator' },
+    {
+      label: 'Pause Reminders',
+      type: 'checkbox',
+      checked: isPaused,
+      click: () => {
+        store.set('isPaused', !isPaused);
+        rescheduleReminders();
+      }
+    },
+    { type: 'separator' },
+    {
+      label: getNextReminderText(),
+      enabled: false
+    },
+    { type: 'separator' },
+    {
+      label: 'Quit',
+      click: () => app.quit()
+    }
+  ]);
+
+  tray.setContextMenu(contextMenu);
+}
+
+function createTray() {
+  const iconPath = app.isPackaged
+    ? path.join(process.resourcesPath, 'build', 'trayTemplate.png')
+    : path.join(__dirname, 'build', 'trayTemplate.png');
+
+  let icon;
+
+  try {
+    icon = nativeImage.createFromPath(iconPath);
+    if (icon.isEmpty()) {
+      icon = nativeImage.createEmpty();
+    }
+  } catch (e) {
+    icon = nativeImage.createEmpty();
+  }
+
+  tray = new Tray(icon);
+  tray.setToolTip('Rye - Eye Rest Reminder');
+  updateTrayMenu();
+
+  setInterval(() => {
+    updateTrayMenu();
+  }, 60000);
+}
+
+function createSettingsWindow() {
+  if (settingsWindow) {
+    settingsWindow.focus();
+    return;
+  }
+
+  settingsWindow = new BrowserWindow({
+    width: 500,
+    height: 600,
+    resizable: false,
+    webPreferences: {
+      preload: path.join(__dirname, 'preload-settings.js'),
+      contextIsolation: true,
+      nodeIntegration: false
+    }
+  });
+
+  settingsWindow.loadFile('dist/settings.html');
+
+  settingsWindow.on('closed', () => {
+    settingsWindow = null;
+  });
+}
+
+ipcMain.handle('get-settings', () => {
+  return store.store;
+});
+
+ipcMain.handle('save-settings', (event, newSettings) => {
+  const workingHours = newSettings.workingHours;
+
+  if (workingHours.enabled) {
+    const [startHour, startMin] = workingHours.startTime.split(':').map(Number);
+    const [endHour, endMin] = workingHours.endTime.split(':').map(Number);
+    const startMinutes = startHour * 60 + startMin;
+    const endMinutes = endHour * 60 + endMin;
+
+    if (endMinutes <= startMinutes) {
+      throw new Error('End time must be after start time');
+    }
+  }
+
+  store.set(newSettings);
+  rescheduleReminders();
+});
+
 app.whenReady().then(() => {
+  createTray();
   scheduleNextReminder();
 });
 

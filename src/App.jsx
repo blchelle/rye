@@ -5,9 +5,9 @@ const App = () => {
   const [started, setStarted] = useState(false);
 
   useEffect(() => {
-    window.electronAPI.onStartCountdown(() => {
+    window.electronAPI.onStartCountdown((event, data) => {
       setStarted(true);
-      setCountdown(30);
+      setCountdown(data.duration);
     });
   }, []);
 
