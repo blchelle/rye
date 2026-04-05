@@ -1,7 +1,23 @@
 const { app, BrowserWindow, Tray, Menu, ipcMain, nativeImage, systemPreferences } = require('electron');
 const path = require('path');
 const Store = require('electron-store');
-const { execSync } = require('child_process');
+const { execSync, exec } = require('child_process');
+
+const SYSTEM_SOUNDS = [
+  { name: 'Glass', file: 'Glass.aiff' },
+  { name: 'Blow', file: 'Blow.aiff' },
+  { name: 'Bottle', file: 'Bottle.aiff' },
+  { name: 'Frog', file: 'Frog.aiff' },
+  { name: 'Funk', file: 'Funk.aiff' },
+  { name: 'Hero', file: 'Hero.aiff' },
+  { name: 'Morse', file: 'Morse.aiff' },
+  { name: 'Ping', file: 'Ping.aiff' },
+  { name: 'Pop', file: 'Pop.aiff' },
+  { name: 'Purr', file: 'Purr.aiff' },
+  { name: 'Sosumi', file: 'Sosumi.aiff' },
+  { name: 'Submarine', file: 'Submarine.aiff' },
+  { name: 'Tink', file: 'Tink.aiff' }
+];
 
 const store = new Store({
   defaults: {
@@ -10,6 +26,7 @@ const store = new Store({
     isPaused: false,
     ignoreWhenScreenRecording: true,
     showDismissButton: false,
+    completionSound: 'Glass.aiff',
     workingHours: {
       enabled: false,
       startTime: '09:00',
@@ -161,6 +178,10 @@ function createReminderWindow() {
 
   setTimeout(() => {
     if (reminderWindow) {
+      if (process.platform === 'darwin') {
+        const soundFile = store.get('completionSound') || 'Glass.aiff';
+        exec(`afplay /System/Library/Sounds/${soundFile}`);
+      }
       reminderWindow.destroy();
       reminderWindow = null;
     }
@@ -301,6 +322,16 @@ function createSettingsWindow() {
 
 ipcMain.handle('get-settings', () => {
   return store.store;
+});
+
+ipcMain.handle('get-system-sounds', () => {
+  return SYSTEM_SOUNDS;
+});
+
+ipcMain.handle('preview-sound', (_event, soundFile) => {
+  if (process.platform === 'darwin') {
+    exec(`afplay /System/Library/Sounds/${soundFile}`);
+  }
 });
 
 ipcMain.handle('save-settings', (event, newSettings) => {
