@@ -6,6 +6,7 @@ const Settings = () => {
     breakDuration: 30,
     isPaused: false,
     ignoreWhenScreenRecording: true,
+    showDismissButton: false,
     workingHours: {
       enabled: false,
       startTime: '09:00',
@@ -44,6 +45,12 @@ const Settings = () => {
 
   const handleIgnoreWhenScreenRecordingChange = (e) => {
     const newSettings = { ...settings, ignoreWhenScreenRecording: e.target.checked };
+    setSettings(newSettings);
+    saveSettings(newSettings);
+  };
+
+  const handleShowDismissButtonChange = (e) => {
+    const newSettings = { ...settings, showDismissButton: e.target.checked };
     setSettings(newSettings);
     saveSettings(newSettings);
   };
@@ -179,6 +186,27 @@ const Settings = () => {
         </label>
         <div style={{ fontSize: '12px', color: '#666', marginTop: '4px', marginLeft: '24px' }}>
           Don't show reminders during screen recording or sharing
+        </div>
+      </div>
+
+      <div style={{ marginBottom: '30px' }}>
+        <label style={{
+          display: 'flex',
+          alignItems: 'center',
+          fontWeight: '500',
+          fontSize: '14px',
+          cursor: 'pointer'
+        }}>
+          <input
+            type="checkbox"
+            checked={settings.showDismissButton}
+            onChange={handleShowDismissButtonChange}
+            style={{ marginRight: '8px', cursor: 'pointer' }}
+          />
+          Show dismiss button
+        </label>
+        <div style={{ fontSize: '12px', color: '#666', marginTop: '4px', marginLeft: '24px' }}>
+          Display a button to manually close reminders
         </div>
       </div>
 

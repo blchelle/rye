@@ -33,9 +33,13 @@
       "main.js",
       "preload.js",
       "preload-settings.js",
+      "detect-screen-share",
       "dist/**/*",
       "package.json",
       "node_modules/**/*"
+    ],
+    "asarUnpack": [
+      "detect-screen-share"
     ],
     "extraResources": [
       {
@@ -48,8 +52,10 @@
       "category": "public.app-category.healthcare-fitness",
       "target": "dmg",
       "icon": "build/icon.icns",
+      "entitlements": "entitlements.mac.plist",
       "extendInfo": {
-        "LSUIElement": true
+        "LSUIElement": true,
+        "NSScreenCaptureDescription": "Rye needs screen recording permission to detect when you're sharing your screen, so it can skip reminders during presentations."
       }
     }
   }
