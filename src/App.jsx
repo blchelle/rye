@@ -3,11 +3,13 @@ import { useState, useEffect } from 'react';
 const App = () => {
   const [countdown, setCountdown] = useState(30);
   const [started, setStarted] = useState(false);
+  const [showDismissButton, setShowDismissButton] = useState(false);
 
   useEffect(() => {
     window.electronAPI.onStartCountdown((event, data) => {
       setStarted(true);
       setCountdown(data.duration);
+      setShowDismissButton(data.showDismissButton);
     });
   }, []);
 
@@ -69,6 +71,24 @@ const App = () => {
       }}>
         {countdown}
       </div>
+
+      {showDismissButton && (
+        <button
+          onClick={() => window.electronAPI.dismissReminder()}
+          style={{
+            padding: '8px 16px',
+            fontSize: '14px',
+            backgroundColor: 'rgba(255, 255, 255, 0.2)',
+            color: 'white',
+            border: '1px solid rgba(255, 255, 255, 0.3)',
+            borderRadius: '6px',
+            cursor: 'pointer',
+            fontWeight: '400'
+          }}
+        >
+          Dismiss
+        </button>
+      )}
     </div>
     </>
   );

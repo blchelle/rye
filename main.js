@@ -1,4 +1,4 @@
-const { app, BrowserWindow, Tray, Menu, ipcMain, nativeImage } = require('electron');
+const { app, BrowserWindow, Tray, Menu, ipcMain, nativeImage, systemPreferences } = require('electron');
 const path = require('path');
 const Store = require('electron-store');
 const { execSync } = require('child_process');
@@ -9,6 +9,7 @@ const store = new Store({
     breakDuration: 30,
     isPaused: false,
     ignoreWhenScreenRecording: true,
+    showDismissButton: false,
     workingHours: {
       enabled: false,
       startTime: '09:00',
@@ -42,21 +43,33 @@ function isScreenBeingCaptured() {
   if (process.platform !== 'darwin') return false;
 
   try {
-    // Check for native screen recording apps
-    const appCheck = execSync(
-      'pgrep -l screencaptureui || pgrep -l "QuickTime Player" || pgrep -l OBS || true',
-      { encoding: 'utf8', timeout: 300 }
-    );
+    // In packaged app, binary is in app.asar or app.asar.unpacked
+    // In dev mode, it's in the root directory
+    const binaryName = 'detect-screen-share';
+    let binaryPath;
 
-    // Check for browser video capture (Google Meet, Zoom web, etc.)
-    const videoCaptureCheck = execSync(
-      'pgrep -fl "VideoCaptureService|video_capture" || true',
-      { encoding: 'utf8', timeout: 300 }
-    );
+    if (app.isPackaged) {
+      // Try unpacked resources first (for executables)
+      binaryPath = path.join(process.resourcesPath, 'app.asar.unpacked', binaryName);
 
-    return appCheck.trim().length > 0 || videoCaptureCheck.trim().length > 0;
+      // Fallback to regular app path
+      if (!require('fs').existsSync(binaryPath)) {
+        binaryPath = path.join(app.getAppPath(), binaryName);
+      }
+    } else {
+      binaryPath = path.join(__dirname, binaryName);
+    }
+
+    console.log('Checking screen capture with binary:', binaryPath);
+    console.log('Binary exists:', require('fs').existsSync(binaryPath));
+
+    const result = execSync(binaryPath, { encoding: 'utf8', timeout: 1000 });
+    console.log('Detection result:', result);
+
+    const detection = JSON.parse(result);
+    return detection.sharing === true;
   } catch (error) {
-    console.log('Screen capture check failed:', error);
+    console.log('Screen capture check failed:', error.message);
     return false;
   }
 }
@@ -137,9 +150,13 @@ function createReminderWindow() {
   reminderWindow.loadFile('dist/index.html');
 
   const breakDuration = store.get('breakDuration');
+  const showDismissButton = store.get('showDismissButton');
 
   reminderWindow.webContents.on('did-finish-load', () => {
-    reminderWindow.webContents.send('start-countdown', { duration: breakDuration });
+    reminderWindow.webContents.send('start-countdown', {
+      duration: breakDuration,
+      showDismissButton
+    });
   });
 
   setTimeout(() => {
@@ -304,9 +321,19 @@ ipcMain.handle('save-settings', (event, newSettings) => {
   rescheduleReminders();
 });
 
+ipcMain.handle('dismiss-reminder', () => {
+  if (reminderWindow) {
+    reminderWindow.destroy();
+    reminderWindow = null;
+  }
+});
+
 app.whenReady().then(() => {
   createTray();
   scheduleNextReminder();
+
+  // Trigger screen recording permission prompt on first launch
+  isScreenBeingCaptured();
 });
 
 app.on('window-all-closed', () => {
