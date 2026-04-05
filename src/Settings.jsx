@@ -7,6 +7,7 @@ const Settings = () => {
     isPaused: false,
     ignoreWhenScreenRecording: true,
     showDismissButton: false,
+    completionSound: 'Glass.aiff',
     workingHours: {
       enabled: false,
       startTime: '09:00',
@@ -14,10 +15,12 @@ const Settings = () => {
     }
   });
 
+  const [systemSounds, setSystemSounds] = useState([]);
   const [error, setError] = useState('');
 
   useEffect(() => {
     window.electronAPI.getSettings().then(setSettings);
+    window.electronAPI.getSystemSounds().then(setSystemSounds);
   }, []);
 
   const saveSettings = async (newSettings) => {
@@ -53,6 +56,14 @@ const Settings = () => {
     const newSettings = { ...settings, showDismissButton: e.target.checked };
     setSettings(newSettings);
     saveSettings(newSettings);
+  };
+
+  const handleSoundChange = (e) => {
+    const soundFile = e.target.value;
+    const newSettings = { ...settings, completionSound: soundFile };
+    setSettings(newSettings);
+    saveSettings(newSettings);
+    window.electronAPI.previewSound(soundFile);
   };
 
   const handleWorkingHoursEnabledChange = (e) => {
@@ -207,6 +218,38 @@ const Settings = () => {
         </label>
         <div style={{ fontSize: '12px', color: '#666', marginTop: '4px', marginLeft: '24px' }}>
           Display a button to manually close reminders
+        </div>
+      </div>
+
+      <div style={{ marginBottom: '30px' }}>
+        <label style={{
+          display: 'block',
+          marginBottom: '8px',
+          fontWeight: '500',
+          fontSize: '14px'
+        }}>
+          Completion Sound
+        </label>
+        <select
+          value={settings.completionSound}
+          onChange={handleSoundChange}
+          style={{
+            width: '100%',
+            padding: '8px 12px',
+            fontSize: '14px',
+            border: '1px solid #ddd',
+            borderRadius: '6px',
+            boxSizing: 'border-box'
+          }}
+        >
+          {systemSounds.map(sound => (
+            <option key={sound.file} value={sound.file}>
+              {sound.name}
+            </option>
+          ))}
+        </select>
+        <div style={{ fontSize: '12px', color: '#666', marginTop: '4px' }}>
+          Sound plays when break ends (preview on select)
         </div>
       </div>
 
