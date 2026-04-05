@@ -5,6 +5,7 @@ const Settings = () => {
     reminderInterval: 30,
     breakDuration: 30,
     isPaused: false,
+    ignoreWhenScreenRecording: true,
     workingHours: {
       enabled: false,
       startTime: '09:00',
@@ -37,6 +38,12 @@ const Settings = () => {
   const handleDurationChange = (e) => {
     const value = parseInt(e.target.value);
     const newSettings = { ...settings, breakDuration: value };
+    setSettings(newSettings);
+    saveSettings(newSettings);
+  };
+
+  const handleIgnoreWhenScreenRecordingChange = (e) => {
+    const newSettings = { ...settings, ignoreWhenScreenRecording: e.target.checked };
     setSettings(newSettings);
     saveSettings(newSettings);
   };
@@ -151,6 +158,27 @@ const Settings = () => {
         />
         <div style={{ fontSize: '12px', color: '#666', marginTop: '4px' }}>
           How long each break lasts (10-300 seconds)
+        </div>
+      </div>
+
+      <div style={{ marginBottom: '30px' }}>
+        <label style={{
+          display: 'flex',
+          alignItems: 'center',
+          fontWeight: '500',
+          fontSize: '14px',
+          cursor: 'pointer'
+        }}>
+          <input
+            type="checkbox"
+            checked={settings.ignoreWhenScreenRecording}
+            onChange={handleIgnoreWhenScreenRecordingChange}
+            style={{ marginRight: '8px', cursor: 'pointer' }}
+          />
+          Ignore when screen recording
+        </label>
+        <div style={{ fontSize: '12px', color: '#666', marginTop: '4px', marginLeft: '24px' }}>
+          Don't show reminders during screen recording or sharing
         </div>
       </div>
 

@@ -1,12 +1,14 @@
 const { app, BrowserWindow, Tray, Menu, ipcMain, nativeImage } = require('electron');
 const path = require('path');
 const Store = require('electron-store');
+const { execSync } = require('child_process');
 
 const store = new Store({
   defaults: {
     reminderInterval: 30,
     breakDuration: 30,
     isPaused: false,
+    ignoreWhenScreenRecording: true,
     workingHours: {
       enabled: false,
       startTime: '09:00',
@@ -34,6 +36,29 @@ function isWithinWorkingHours() {
   const endMinutes = endHour * 60 + endMin;
 
   return currentMinutes >= startMinutes && currentMinutes < endMinutes;
+}
+
+function isScreenBeingCaptured() {
+  if (process.platform !== 'darwin') return false;
+
+  try {
+    // Check for native screen recording apps
+    const appCheck = execSync(
+      'pgrep -l screencaptureui || pgrep -l "QuickTime Player" || pgrep -l OBS || true',
+      { encoding: 'utf8', timeout: 300 }
+    );
+
+    // Check for browser video capture (Google Meet, Zoom web, etc.)
+    const videoCaptureCheck = execSync(
+      'pgrep -fl "VideoCaptureService|video_capture" || true',
+      { encoding: 'utf8', timeout: 300 }
+    );
+
+    return appCheck.trim().length > 0 || videoCaptureCheck.trim().length > 0;
+  } catch (error) {
+    console.log('Screen capture check failed:', error);
+    return false;
+  }
 }
 
 function getNextReminderTime() {
@@ -83,6 +108,11 @@ function getNextReminderTime() {
 
 function createReminderWindow() {
   if (reminderWindow) return;
+
+  if (store.get('ignoreWhenScreenRecording') && isScreenBeingCaptured()) {
+    console.log('Screen recording detected, skipping reminder');
+    return;
+  }
 
   const { screen } = require('electron');
   const { width, height } = screen.getPrimaryDisplay().workAreaSize;
