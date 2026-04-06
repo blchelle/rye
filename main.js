@@ -21,17 +21,12 @@ const SYSTEM_SOUNDS = [
 
 const store = new Store({
   defaults: {
-    reminderInterval: 30,
-    breakDuration: 30,
+    reminderInterval: 20,
+    breakDuration: 20,
     isPaused: false,
     ignoreWhenScreenRecording: true,
-    showDismissButton: false,
-    completionSound: 'Glass.aiff',
-    workingHours: {
-      enabled: false,
-      startTime: '09:00',
-      endTime: '17:00'
-    }
+    showDismissButton: true,
+    completionSound: 'Blow.aiff'
   }
 });
 
@@ -39,22 +34,6 @@ let reminderWindow = null;
 let settingsWindow = null;
 let tray = null;
 let nextReminderTimeout = null;
-
-function isWithinWorkingHours() {
-  const settings = store.get('workingHours');
-  if (!settings.enabled) return true;
-
-  const now = new Date();
-  const currentMinutes = now.getHours() * 60 + now.getMinutes();
-
-  const [startHour, startMin] = settings.startTime.split(':').map(Number);
-  const [endHour, endMin] = settings.endTime.split(':').map(Number);
-
-  const startMinutes = startHour * 60 + startMin;
-  const endMinutes = endHour * 60 + endMin;
-
-  return currentMinutes >= startMinutes && currentMinutes < endMinutes;
-}
 
 function isScreenBeingCaptured() {
   if (process.platform !== 'darwin') return false;
@@ -93,22 +72,6 @@ function isScreenBeingCaptured() {
 
 function getNextReminderTime() {
   const interval = store.get('reminderInterval');
-  const workingHours = store.get('workingHours');
-
-  if (!isWithinWorkingHours() && workingHours.enabled) {
-    const now = new Date();
-    const [startHour, startMin] = workingHours.startTime.split(':').map(Number);
-
-    const nextStart = new Date();
-    nextStart.setHours(startHour, startMin, 0, 0);
-
-    if (nextStart <= now) {
-      nextStart.setDate(nextStart.getDate() + 1);
-    }
-
-    return nextStart - now;
-  }
-
   const now = new Date();
   const currentMinutes = now.getMinutes();
   const currentSeconds = now.getSeconds();
@@ -335,19 +298,6 @@ ipcMain.handle('preview-sound', (_event, soundFile) => {
 });
 
 ipcMain.handle('save-settings', (event, newSettings) => {
-  const workingHours = newSettings.workingHours;
-
-  if (workingHours.enabled) {
-    const [startHour, startMin] = workingHours.startTime.split(':').map(Number);
-    const [endHour, endMin] = workingHours.endTime.split(':').map(Number);
-    const startMinutes = startHour * 60 + startMin;
-    const endMinutes = endHour * 60 + endMin;
-
-    if (endMinutes <= startMinutes) {
-      throw new Error('End time must be after start time');
-    }
-  }
-
   store.set(newSettings);
   rescheduleReminders();
 });
