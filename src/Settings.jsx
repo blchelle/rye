@@ -2,17 +2,12 @@ import { useState, useEffect } from 'react';
 
 const Settings = () => {
   const [settings, setSettings] = useState({
-    reminderInterval: 30,
-    breakDuration: 30,
+    reminderInterval: 20,
+    breakDuration: 20,
     isPaused: false,
     ignoreWhenScreenRecording: true,
-    showDismissButton: false,
-    completionSound: 'Glass.aiff',
-    workingHours: {
-      enabled: false,
-      startTime: '09:00',
-      endTime: '17:00'
-    }
+    showDismissButton: true,
+    completionSound: 'Blow.aiff'
   });
 
   const [systemSounds, setSystemSounds] = useState([]);
@@ -64,33 +59,6 @@ const Settings = () => {
     setSettings(newSettings);
     saveSettings(newSettings);
     window.electronAPI.previewSound(soundFile);
-  };
-
-  const handleWorkingHoursEnabledChange = (e) => {
-    const newSettings = {
-      ...settings,
-      workingHours: { ...settings.workingHours, enabled: e.target.checked }
-    };
-    setSettings(newSettings);
-    saveSettings(newSettings);
-  };
-
-  const handleStartTimeChange = (e) => {
-    const newSettings = {
-      ...settings,
-      workingHours: { ...settings.workingHours, startTime: e.target.value }
-    };
-    setSettings(newSettings);
-    saveSettings(newSettings);
-  };
-
-  const handleEndTimeChange = (e) => {
-    const newSettings = {
-      ...settings,
-      workingHours: { ...settings.workingHours, endTime: e.target.value }
-    };
-    setSettings(newSettings);
-    saveSettings(newSettings);
   };
 
   return (
@@ -250,87 +218,6 @@ const Settings = () => {
         </select>
         <div style={{ fontSize: '12px', color: '#666', marginTop: '4px' }}>
           Sound plays when break ends (preview on select)
-        </div>
-      </div>
-
-      <div style={{
-        padding: '20px',
-        backgroundColor: '#f9f9f9',
-        borderRadius: '8px'
-      }}>
-        <label style={{
-          display: 'flex',
-          alignItems: 'center',
-          marginBottom: '16px',
-          fontWeight: '500',
-          fontSize: '14px',
-          cursor: 'pointer'
-        }}>
-          <input
-            type="checkbox"
-            checked={settings.workingHours.enabled}
-            onChange={handleWorkingHoursEnabledChange}
-            style={{ marginRight: '8px', cursor: 'pointer' }}
-          />
-          Enable Working Hours
-        </label>
-
-        <div style={{ marginBottom: '16px' }}>
-          <label style={{
-            display: 'block',
-            marginBottom: '8px',
-            fontSize: '14px',
-            color: settings.workingHours.enabled ? '#000' : '#999'
-          }}>
-            Start Time
-          </label>
-          <input
-            type="time"
-            value={settings.workingHours.startTime}
-            onChange={handleStartTimeChange}
-            disabled={!settings.workingHours.enabled}
-            style={{
-              width: '100%',
-              padding: '8px 12px',
-              fontSize: '14px',
-              border: '1px solid #ddd',
-              borderRadius: '6px',
-              boxSizing: 'border-box',
-              backgroundColor: settings.workingHours.enabled ? 'white' : '#f5f5f5',
-              cursor: settings.workingHours.enabled ? 'text' : 'not-allowed'
-            }}
-          />
-        </div>
-
-        <div style={{ marginBottom: '8px' }}>
-          <label style={{
-            display: 'block',
-            marginBottom: '8px',
-            fontSize: '14px',
-            color: settings.workingHours.enabled ? '#000' : '#999'
-          }}>
-            End Time
-          </label>
-          <input
-            type="time"
-            value={settings.workingHours.endTime}
-            onChange={handleEndTimeChange}
-            disabled={!settings.workingHours.enabled}
-            style={{
-              width: '100%',
-              padding: '8px 12px',
-              fontSize: '14px',
-              border: '1px solid #ddd',
-              borderRadius: '6px',
-              boxSizing: 'border-box',
-              backgroundColor: settings.workingHours.enabled ? 'white' : '#f5f5f5',
-              cursor: settings.workingHours.enabled ? 'text' : 'not-allowed'
-            }}
-          />
-        </div>
-
-        <div style={{ fontSize: '12px', color: '#666', marginTop: '8px' }}>
-          Reminders only during these hours (same-day only)
         </div>
       </div>
     </div>
