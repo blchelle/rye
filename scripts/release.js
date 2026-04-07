@@ -39,6 +39,9 @@ try {
 
   exec(`gh release create v${version} "${dmgPath}" --title "v${version}" --generate-notes`);
 
+  console.log('\nUpdating homebrew cask...');
+  exec(`./scripts/update-cask.sh ${version}`);
+
   console.log(`\nRelease v${version} published successfully!`);
 } catch (error) {
   console.error('Release failed:', error.message);
