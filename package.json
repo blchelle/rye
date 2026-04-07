@@ -1,13 +1,14 @@
 {
   "name": "rye",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "Eye rest reminder app",
   "main": "main.js",
   "scripts": {
     "dev": "vite",
     "build:web": "vite build",
     "start": "electron .",
-    "build": "npm run build:web && electron-builder --mac"
+    "build": "npm run build:web && electron-builder --mac",
+    "release": "node scripts/release.js"
   },
   "keywords": [
     "electron",
@@ -41,7 +42,9 @@
       {
         "from": "build",
         "to": "build",
-        "filter": ["tray*.png"]
+        "filter": [
+          "tray*.png"
+        ]
       }
     ],
     "mac": {
