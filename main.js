@@ -24,9 +24,10 @@ const store = new Store({
     reminderInterval: 20,
     breakDuration: 20,
     isPaused: false,
-    ignoreWhenScreenRecording: true,
+    ignoreWhenScreenRecording: false,
     showDismissButton: true,
-    completionSound: 'Blow.aiff'
+    completionSound: 'Blow.aiff',
+    hasRequestedScreenRecordingPermission: false
   }
 });
 
@@ -302,6 +303,13 @@ ipcMain.handle('save-settings', (event, newSettings) => {
   rescheduleReminders();
 });
 
+ipcMain.handle('request-screen-recording-permission', () => {
+  if (!store.get('hasRequestedScreenRecordingPermission')) {
+    isScreenBeingCaptured();
+    store.set('hasRequestedScreenRecordingPermission', true);
+  }
+});
+
 ipcMain.handle('dismiss-reminder', () => {
   if (reminderWindow) {
     reminderWindow.destroy();
@@ -312,9 +320,6 @@ ipcMain.handle('dismiss-reminder', () => {
 app.whenReady().then(() => {
   createTray();
   scheduleNextReminder();
-
-  // Trigger screen recording permission prompt on first launch
-  isScreenBeingCaptured();
 });
 
 app.on('window-all-closed', () => {

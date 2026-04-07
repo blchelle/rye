@@ -5,7 +5,7 @@ const Settings = () => {
     reminderInterval: 20,
     breakDuration: 20,
     isPaused: false,
-    ignoreWhenScreenRecording: true,
+    ignoreWhenScreenRecording: false,
     showDismissButton: true,
     completionSound: 'Blow.aiff'
   });
@@ -41,10 +41,15 @@ const Settings = () => {
     saveSettings(newSettings);
   };
 
-  const handleIgnoreWhenScreenRecordingChange = (e) => {
-    const newSettings = { ...settings, ignoreWhenScreenRecording: e.target.checked };
+  const handleIgnoreWhenScreenRecordingChange = async (e) => {
+    const isChecked = e.target.checked;
+    const newSettings = { ...settings, ignoreWhenScreenRecording: isChecked };
     setSettings(newSettings);
     saveSettings(newSettings);
+
+    if (isChecked) {
+      await window.electronAPI.requestScreenRecordingPermission();
+    }
   };
 
   const handleShowDismissButtonChange = (e) => {
