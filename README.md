@@ -2,7 +2,13 @@
 
 macOS app that reminds you to rest your eyes every 30 minutes with a 30-second full-screen countdown.
 
-## Setup
+## Installation
+
+```bash
+brew install blchelle/tap/rye
+```
+
+## Development Setup
 
 ```bash
 npm install
