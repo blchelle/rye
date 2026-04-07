@@ -1,7 +1,7 @@
-const { app, BrowserWindow, Tray, Menu, ipcMain, nativeImage, systemPreferences } = require('electron');
+const { app, BrowserWindow, Tray, Menu, ipcMain, nativeImage } = require('electron');
 const path = require('path');
 const Store = require('electron-store');
-const { execSync, exec } = require('child_process');
+const { exec } = require('child_process');
 
 const SYSTEM_SOUNDS = [
   { name: 'Glass', file: 'Glass.aiff' },
@@ -24,10 +24,8 @@ const store = new Store({
     reminderInterval: 20,
     breakDuration: 20,
     isPaused: false,
-    ignoreWhenScreenRecording: false,
     showDismissButton: true,
-    completionSound: 'Blow.aiff',
-    hasRequestedScreenRecordingPermission: false
+    completionSound: 'Blow.aiff'
   }
 });
 
@@ -36,40 +34,6 @@ let settingsWindow = null;
 let tray = null;
 let nextReminderTimeout = null;
 
-function isScreenBeingCaptured() {
-  if (process.platform !== 'darwin') return false;
-
-  try {
-    // In packaged app, binary is in app.asar or app.asar.unpacked
-    // In dev mode, it's in the root directory
-    const binaryName = 'detect-screen-share';
-    let binaryPath;
-
-    if (app.isPackaged) {
-      // Try unpacked resources first (for executables)
-      binaryPath = path.join(process.resourcesPath, 'app.asar.unpacked', binaryName);
-
-      // Fallback to regular app path
-      if (!require('fs').existsSync(binaryPath)) {
-        binaryPath = path.join(app.getAppPath(), binaryName);
-      }
-    } else {
-      binaryPath = path.join(__dirname, binaryName);
-    }
-
-    console.log('Checking screen capture with binary:', binaryPath);
-    console.log('Binary exists:', require('fs').existsSync(binaryPath));
-
-    const result = execSync(binaryPath, { encoding: 'utf8', timeout: 1000 });
-    console.log('Detection result:', result);
-
-    const detection = JSON.parse(result);
-    return detection.sharing === true;
-  } catch (error) {
-    console.log('Screen capture check failed:', error.message);
-    return false;
-  }
-}
 
 function getNextReminderTime() {
   const interval = store.get('reminderInterval');
@@ -103,11 +67,6 @@ function getNextReminderTime() {
 function createReminderWindow() {
   if (reminderWindow) return;
 
-  if (store.get('ignoreWhenScreenRecording') && isScreenBeingCaptured()) {
-    console.log('Screen recording detected, skipping reminder');
-    return;
-  }
-
   const { screen } = require('electron');
   const { width, height } = screen.getPrimaryDisplay().workAreaSize;
 
@@ -128,6 +87,7 @@ function createReminderWindow() {
     }
   });
 
+  reminderWindow.setContentProtection(true);
   reminderWindow.loadFile('dist/index.html');
 
   const breakDuration = store.get('breakDuration');
@@ -301,13 +261,6 @@ ipcMain.handle('preview-sound', (_event, soundFile) => {
 ipcMain.handle('save-settings', (event, newSettings) => {
   store.set(newSettings);
   rescheduleReminders();
-});
-
-ipcMain.handle('request-screen-recording-permission', () => {
-  if (!store.get('hasRequestedScreenRecordingPermission')) {
-    isScreenBeingCaptured();
-    store.set('hasRequestedScreenRecordingPermission', true);
-  }
 });
 
 ipcMain.handle('dismiss-reminder', () => {

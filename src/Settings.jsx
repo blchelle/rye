@@ -5,7 +5,6 @@ const Settings = () => {
     reminderInterval: 20,
     breakDuration: 20,
     isPaused: false,
-    ignoreWhenScreenRecording: false,
     showDismissButton: true,
     completionSound: 'Blow.aiff'
   });
@@ -39,17 +38,6 @@ const Settings = () => {
     const newSettings = { ...settings, breakDuration: value };
     setSettings(newSettings);
     saveSettings(newSettings);
-  };
-
-  const handleIgnoreWhenScreenRecordingChange = async (e) => {
-    const isChecked = e.target.checked;
-    const newSettings = { ...settings, ignoreWhenScreenRecording: isChecked };
-    setSettings(newSettings);
-    saveSettings(newSettings);
-
-    if (isChecked) {
-      await window.electronAPI.requestScreenRecordingPermission();
-    }
   };
 
   const handleShowDismissButtonChange = (e) => {
@@ -149,27 +137,6 @@ const Settings = () => {
         />
         <div style={{ fontSize: '12px', color: '#666', marginTop: '4px' }}>
           How long each break lasts (10-300 seconds)
-        </div>
-      </div>
-
-      <div style={{ marginBottom: '30px' }}>
-        <label style={{
-          display: 'flex',
-          alignItems: 'center',
-          fontWeight: '500',
-          fontSize: '14px',
-          cursor: 'pointer'
-        }}>
-          <input
-            type="checkbox"
-            checked={settings.ignoreWhenScreenRecording}
-            onChange={handleIgnoreWhenScreenRecordingChange}
-            style={{ marginRight: '8px', cursor: 'pointer' }}
-          />
-          Ignore when screen recording
-        </label>
-        <div style={{ fontSize: '12px', color: '#666', marginTop: '4px', marginLeft: '24px' }}>
-          Don't show reminders during screen recording or sharing
         </div>
       </div>
 
