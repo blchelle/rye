@@ -4,5 +4,6 @@ contextBridge.exposeInMainWorld('electronAPI', {
   getSettings: () => ipcRenderer.invoke('get-settings'),
   saveSettings: (settings) => ipcRenderer.invoke('save-settings', settings),
   getSystemSounds: () => ipcRenderer.invoke('get-system-sounds'),
-  previewSound: (soundFile) => ipcRenderer.invoke('preview-sound', soundFile)
+  previewSound: (soundFile) => ipcRenderer.invoke('preview-sound', soundFile),
+  requestScreenRecordingPermission: () => ipcRenderer.invoke('request-screen-recording-permission')
 });
