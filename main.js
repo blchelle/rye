@@ -1,4 +1,4 @@
-const { app, BrowserWindow, Tray, Menu, ipcMain, nativeImage } = require('electron');
+const { app, BrowserWindow, Tray, Menu, ipcMain, nativeImage, powerMonitor } = require('electron');
 const path = require('path');
 const Store = require('electron-store');
 const { exec } = require('child_process');
@@ -151,9 +151,11 @@ function getNextReminderText() {
   }
 
   const msUntilNext = getNextReminderTime();
-  const minutes = Math.ceil(msUntilNext / 60000);
+  const totalSeconds = Math.ceil(msUntilNext / 1000);
+  const minutes = Math.floor(totalSeconds / 60);
+  const seconds = totalSeconds % 60;
 
-  return `Next reminder: ${minutes}m`;
+  return `Next reminder: ${minutes}m ${seconds}s`;
 }
 
 function updateTrayMenu() {
@@ -217,7 +219,7 @@ function createTray() {
 
   setInterval(() => {
     updateTrayMenu();
-  }, 60000);
+  }, 1000);
 }
 
 function createSettingsWindow() {
@@ -273,6 +275,7 @@ ipcMain.handle('dismiss-reminder', () => {
 app.whenReady().then(() => {
   createTray();
   scheduleNextReminder();
+  powerMonitor.on('resume', scheduleNextReminder);
 });
 
 app.on('window-all-closed', () => {
