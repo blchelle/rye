@@ -1,4 +1,7 @@
-# ![RYE Icon](build/icon.png) RYE (Rest-Your-Eyes)
+<div style="display: flex; align-items: center; gap: 8px;">
+  <img src="build/icon.png" alt="RYE Icon" height="48" />
+  <h1 style="margin: 0;">RYE (Rest-Your-Eyes)</h1>
+</div>
 
 macOS app that reminds you to rest your eyes with a full-screen countdown.
 
