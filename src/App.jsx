@@ -63,6 +63,15 @@ const App = () => {
         Rest Your Eyes
       </h1>
 
+      <p style={{
+        fontSize: '1.5rem',
+        fontWeight: '300',
+        marginBottom: '3rem',
+        opacity: 0.9
+      }}>
+        Focus on an object 20 feet away
+      </p>
+
       <div style={{
         fontSize: '8rem',
         fontWeight: '200',
