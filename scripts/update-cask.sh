@@ -9,12 +9,18 @@ if [ -z "$VERSION" ]; then
   exit 1
 fi
 
-DMG_URL="https://github.com/blchelle/rye/releases/download/v${VERSION}/Rye-${VERSION}-arm64.dmg"
+DMG_NAME="Rye-${VERSION}-arm64.dmg"
 
 echo "Downloading DMG to calculate SHA256..."
-curl -L -o /tmp/Rye.dmg "$DMG_URL"
-SHA256=$(shasum -a 256 /tmp/Rye.dmg | awk '{print $1}')
-rm /tmp/Rye.dmg
+rm -f "/tmp/${DMG_NAME}"
+gh release download "v${VERSION}" --repo blchelle/rye --pattern "$DMG_NAME" --dir /tmp
+SHA256=$(shasum -a 256 "/tmp/${DMG_NAME}" | awk '{print $1}')
+rm "/tmp/${DMG_NAME}"
+
+if [ -z "$SHA256" ] || [ ${#SHA256} -ne 64 ]; then
+  echo "Failed to compute SHA256"
+  exit 1
+fi
 
 echo "Version: $VERSION"
 echo "SHA256: $SHA256"
